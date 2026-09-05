@@ -1,0 +1,123 @@
+schema_version: 1
+
+context:
+  version: "2.18.5"
+
+package:
+  name: mycli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mycli/mycli-${{ version }}.tar.gz
+  sha256: d6891c252d4068607e6bdac59c0b4ea7573d4e0a69c54420c18e0fcd98fecfd8
+  patches:
+    # zsh prints `NAME=value` for a `typeset NAME` of an already-exported
+    # parameter, and conda always exports PREFIX, so the zsh completion test
+    # harness emits a stray line and fails wherever zsh is installed. Not yet
+    # submitted upstream.
+    - patches/0001-initialise-zsh-completion-harness-locals.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - mycli = mycli.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64.0
+    - setuptools-scm >=8
+  run:
+    - python >=${{ python_min }}
+    - click >=8.3.3,<8.4.0
+    - clickdc >=0.1.1,<0.2.0
+    - cryptography >=50.0.0,<50.1.0
+    - pygments >=2.21.0,<2.22.0
+    - prompt_toolkit >=3.0.41,<4.0.0
+    - pymysql >=1.1.2,<1.2.0
+    - sqlparse >=0.3.0,<0.6.0
+    - sqlglot >=30.17.0,<30.18.0
+    - sqlglotc >=30.17.0,<30.18.0
+    - configobj >=5.0.9,<5.1.0
+    - cli_helpers >=2.15.1,<2.16.0
+    - wcwidth >=0.8.2,<0.9.0
+    - pyperclip >=1.11.0,<1.12.0
+    - pycryptodomex >=3.23.0,<3.24.0
+    - pyfzf >=0.3.1,<0.4.0
+    - rapidfuzz >=3.14.3,<3.15.0
+    - keyring >=25.7.0,<25.8.0
+    - jinja2 >=3.1.6,<3.2.0
+    - yaspin >=3.4.0,<3.5.0
+
+tests:
+  - python:
+      imports:
+        - mycli
+        - mycli.main
+        - mycli.packages
+        - mycli.packages.ptoolkit
+        - mycli.packages.special
+        - mycli.packages.tabular_output
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+  - script:
+      # mycli.main imports the whole dependency stack at module level, so this
+      # also proves every run dependency resolves and loads.
+      - mycli --help
+      # Upstream's unit tests. Run as `python -m` so the sdist root is on
+      # sys.path for `test.utils`; the tests needing a live MySQL skip
+      # themselves through that module's dbtest marker. The ignored modules
+      # cover the `dataframe` and `llm` extras, which this package does not
+      # ship.
+      - python -m pytest test/pytests -v
+        --ignore=test/pytests/test_polars_completion.py
+        --ignore=test/pytests/test_polars_transform.py
+        --ignore=test/pytests/test_special_llm.py
+    files:
+      source:
+        - test/
+        # The completion tests compare `mycli --completions <shell>` against
+        # these checked-in scripts, found relative to the sdist root.
+        - mycli/resources/completions/
+    requirements:
+      run:
+        - pytest
+        - pexpect
+        - packaging
+  - package_contents:
+      strict: true
+      site_packages:
+        - mycli
+        - mycli.packages
+        - mycli.packages.ptoolkit
+        - mycli.packages.special
+        - mycli.packages.tabular_output
+      files:
+        # Directory globs, so new modules and completion scripts are absorbed
+        # while strict still catches anything landing outside site-packages.
+        - site-packages/mycli/**
+        - site-packages/mycli-${{ version }}.dist-info/**
+        - etc/conda/test-files/mycli/**
+
+about:
+  homepage: https://mycli.net
+  summary: Rich MySQL terminal client with autocompletion, syntax highlighting, and dataframes
+  description: |
+    mycli is a command line interface for MySQL, MariaDB and Percona with
+    auto-completion and syntax highlighting. It completes table names, columns
+    and keywords as you type, highlights the query, and renders results in a
+    range of tabular formats.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  repository: https://github.com/dbcli/mycli
+  documentation: https://www.mycli.net/docs
+
+extra:
+  recipe-maintainers:
+    - tschoonj
