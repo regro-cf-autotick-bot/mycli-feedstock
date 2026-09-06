@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Burr <chrisburr73@gmail.com>
+Date: Sun, 6 Sep 2026 01:57:32 +0200
+Subject: [PATCH] Initialise the zsh completion harness locals explicitly
+
+`typeset NAME` in zsh prints `NAME=value` when the parameter already
+exists, so when PREFIX is exported in the environment the harness writes
+an extra line to stdout and the captured completion output no longer
+matches. It also means the harness starts with the inherited value of
+PREFIX rather than an empty one.
+
+Conda build and test environments always export PREFIX, which makes
+test_zsh_completion_lists_dsn_aliases_in_supported_contexts fail there
+whenever zsh is installed.
+
+Give the three parameters explicit empty initialisers, which both
+suppresses the printing and gives the harness the empty starting state it
+assumes.
+---
+ test/pytests/test_zsh_completion.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/pytests/test_zsh_completion.py b/test/pytests/test_zsh_completion.py
+index 3a6f3d6..b5a87d7 100644
+--- a/test/pytests/test_zsh_completion.py
++++ b/test/pytests/test_zsh_completion.py
+@@ -86,7 +86,7 @@ _path_files() {
+ }
+ 
+ typeset -a captured compset_calls path_file_calls
+-typeset PREFIX IPREFIX used_unambiguous
++typeset PREFIX='' IPREFIX='' used_unambiguous=''
+ compadd() {
+     local array_name=''
+     local candidate
