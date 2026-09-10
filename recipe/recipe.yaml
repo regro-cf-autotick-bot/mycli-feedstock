@@ -1,7 +1,7 @@
 schema_version: 1
 
 context:
-  version: "2.18.5"
+  version: "2.23.0"
 
 package:
   name: mycli
@@ -9,7 +9,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/mycli/mycli-${{ version }}.tar.gz
-  sha256: d6891c252d4068607e6bdac59c0b4ea7573d4e0a69c54420c18e0fcd98fecfd8
+  sha256: 891453488390dc3c1fd8299e74c7bd6f32647c46fae5c2b4000d94ffc59b5263
   patches:
     # zsh prints `NAME=value` for a `typeset NAME` of an already-exported
     # parameter, and conda always exports PREFIX, so the zsh completion test
@@ -75,10 +75,7 @@ tests:
       # themselves through that module's dbtest marker. The ignored modules
       # cover the `dataframe` and `llm` extras, which this package does not
       # ship.
-      - python -m pytest test/pytests -v
-        --ignore=test/pytests/test_polars_completion.py
-        --ignore=test/pytests/test_polars_transform.py
-        --ignore=test/pytests/test_special_llm.py
+      - python -m pytest test/pytests -v --ignore=test/pytests/test_polars_completion.py --ignore=test/pytests/test_polars_transform.py --ignore=test/pytests/test_special_llm.py
     files:
       source:
         - test/
